@@ -3,6 +3,7 @@ import * as Discord from "discord.js";
 import { client } from "../Discord-Bot-Core/bot";
 
 const NOTIFY_ROLE_NAME = "notifications";
+const NOTIFY_DISABLE_ROLE_NAME = "disable notifications";
 const NOTIFY_CHANNEL_NAME = "bot-status-updates";
 
 const guildMonitors = new Discord.Collection<Discord.Snowflake, GuildMonitor>();
@@ -10,6 +11,7 @@ const guildMonitors = new Discord.Collection<Discord.Snowflake, GuildMonitor>();
 class GuildMonitor {
 	private guild: Discord.Guild;
 	private notificationRole: Discord.Role;
+	private notificationDisableRole: Discord.Role;
 	private notificationChannel: Discord.TextChannel;
 
 	//Stores the previous state of the bot
@@ -36,6 +38,8 @@ class GuildMonitor {
 
 		await Promise.all(this.startupPromises);
 
+		if(member.roles.has(this.notificationDisableRole.id)) return;
+
 		let status: string;
 		if(member.presence.status === "offline") status = "offline";
 		else status = "online";
@@ -59,6 +63,7 @@ class GuildMonitor {
 	private async locateOrCreateGuildObjects() {
 		this.startupPromises = [
 			this.locateOrCreateNotificationRole(),
+			this.locateOrCreateNotificationDisableRole(),
 			this.locateOrCreateNotificationChannel()
 		]
 	}
@@ -66,6 +71,11 @@ class GuildMonitor {
 	private async locateOrCreateNotificationRole() {
 		this.notificationRole = this.guild.roles.find(r => r.name === NOTIFY_ROLE_NAME);
 		if(!this.notificationRole) this.notificationRole = await this.guild.createRole({name: NOTIFY_ROLE_NAME, mentionable: true});
+	}
+
+	private async locateOrCreateNotificationDisableRole() {
+		this.notificationDisableRole = this.guild.roles.find(r => r.name === NOTIFY_DISABLE_ROLE_NAME);
+		if(!this.notificationDisableRole) this.notificationDisableRole = await this.guild.createRole({name: NOTIFY_DISABLE_ROLE_NAME, mentionable: true});
 	}
 
 	private async locateOrCreateNotificationChannel() {
